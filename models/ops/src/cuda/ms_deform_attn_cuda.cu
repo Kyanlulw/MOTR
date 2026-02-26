@@ -69,7 +69,7 @@ at::Tensor ms_deform_attn_cuda_forward(
                 sampling_loc.data_ptr<scalar_t>() + n * im2col_step_ * per_sample_loc_size,
                 attn_weight.data_ptr<scalar_t>() + n * im2col_step_ * per_attn_weight_size,
                 batch_n, spatial_size, num_heads, channels, num_levels, num_query, num_point,
-                columns.data<scalar_t>());
+                columns.data_ptr<scalar_t>());
 
         }));
     }

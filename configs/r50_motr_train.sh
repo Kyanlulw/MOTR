@@ -6,7 +6,7 @@
 # ------------------------------------------------------------------------
 
 
-# for MOT17
+# for MOT17hehe
 
 PRETRAIN=coco_model_final.pth
 EXP_DIR=exps/e2e_motr_r50_joint

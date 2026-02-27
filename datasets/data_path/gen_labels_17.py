@@ -12,8 +12,16 @@ def mkdirs(d):
 mot_root = '/kaggle/working/MOTR'
 
 seq_root = osp.join(mot_root, 'MOT17/images/train')
-label_root = osp.join(mot_root, 'MOT17/labels_with_ids/train')
+
+# Write labels to a writable location, then symlink into MOT17/
+label_root = '/kaggle/working/MOT17_labels/train'
 mkdirs(label_root)
+
+# Create symlink so training code finds labels_with_ids inside MOT17/
+symlink_target = osp.join(mot_root, 'MOT17/labels_with_ids')
+if not osp.exists(symlink_target):
+    os.symlink('/kaggle/working/MOT17_labels', symlink_target)
+    print(f"Created symlink: {symlink_target} -> /kaggle/working/MOT17_labels")
 
 seqs = [s for s in os.listdir(seq_root) if 'SDP' in s]
 

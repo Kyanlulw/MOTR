@@ -6,3 +6,4 @@ motmetrics
 opencv-python
 seaborn
 lap
+wandb

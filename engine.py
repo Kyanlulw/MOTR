@@ -23,6 +23,12 @@ import torch
 import util.misc as utils
 from util import box_ops
 
+try:
+    import wandb
+    HAS_WANDB = True
+except ImportError:
+    HAS_WANDB = False
+
 from torch import Tensor
 from util.plot_utils import draw_boxes, draw_ref_pts, image_hwc2chw
 from datasets.coco_eval import CocoEvaluator
@@ -41,6 +47,8 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
     metric_logger.add_meter('grad_norm', utils.SmoothedValue(window_size=1, fmt='{value:.2f}'))
     header = 'Epoch: [{}]'.format(epoch)
     print_freq = 10
+
+    _wandb_step = epoch * len(data_loader)
 
     prefetcher = data_prefetcher(data_loader, device, prefetch=True)
     samples, targets = prefetcher.next()
@@ -81,6 +89,17 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
         metric_logger.update(lr=optimizer.param_groups[0]["lr"])
         metric_logger.update(grad_norm=grad_total_norm)
 
+        # wandb step logging
+        if HAS_WANDB and wandb.run is not None and utils.is_main_process():
+            wandb.log({
+                'train_step/loss': loss_value,
+                'train_step/lr': optimizer.param_groups[0]["lr"],
+                'train_step/grad_norm': float(grad_total_norm),
+                'train_step/class_error': float(loss_dict_reduced['class_error']),
+                **{f'train_step/{k}': float(v) for k, v in loss_dict_reduced_scaled.items()},
+            }, step=_wandb_step)
+        _wandb_step += 1
+
         samples, targets = prefetcher.next()
     # gather the stats from all processes
     metric_logger.synchronize_between_processes()
@@ -99,6 +118,8 @@ def train_one_epoch_mot(model: torch.nn.Module, criterion: torch.nn.Module,
     metric_logger.add_meter('grad_norm', utils.SmoothedValue(window_size=1, fmt='{value:.2f}'))
     header = 'Epoch: [{}]'.format(epoch)
     print_freq = 10
+
+    _wandb_step = epoch * len(data_loader)
 
     # for samples, targets in metric_logger.log_every(data_loader, print_freq, header):
     for data_dict in metric_logger.log_every(data_loader, print_freq, header):
@@ -139,6 +160,17 @@ def train_one_epoch_mot(model: torch.nn.Module, criterion: torch.nn.Module,
         # metric_logger.update(class_error=loss_dict_reduced['class_error'])
         metric_logger.update(lr=optimizer.param_groups[0]["lr"])
         metric_logger.update(grad_norm=grad_total_norm)
+
+        # wandb step logging
+        if HAS_WANDB and wandb.run is not None and utils.is_main_process():
+            wandb.log({
+                'train_step/loss': loss_value,
+                'train_step/lr': optimizer.param_groups[0]["lr"],
+                'train_step/grad_norm': float(grad_total_norm),
+                **{f'train_step/{k}': float(v) for k, v in loss_dict_reduced_scaled.items()},
+            }, step=_wandb_step)
+        _wandb_step += 1
+
         # gather the stats from all processes
 
     metric_logger.synchronize_between_processes()

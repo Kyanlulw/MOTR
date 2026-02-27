@@ -19,6 +19,12 @@ from pathlib import Path
 
 import numpy as np
 import torch
+
+try:
+    import wandb
+    HAS_WANDB = True
+except ImportError:
+    HAS_WANDB = False
 from torch.utils.data import DataLoader
 import datasets
 
@@ -177,6 +183,16 @@ def get_args_parser():
     parser.add_argument('--memory_bank_with_self_attn', action='store_true', default=False)
 
     parser.add_argument('--use_checkpoint', action='store_true', default=False)
+
+    # wandb logging
+    parser.add_argument('--wandb', action='store_true', default=False,
+                        help='Enable Weights & Biases logging')
+    parser.add_argument('--wandb_project', default='MOTR', type=str,
+                        help='W&B project name')
+    parser.add_argument('--wandb_entity', default=None, type=str,
+                        help='W&B entity (team or username)')
+    parser.add_argument('--wandb_run_name', default=None, type=str,
+                        help='W&B run name (defaults to exp_name)')
     return parser
 
 
@@ -195,6 +211,19 @@ def main(args):
     torch.manual_seed(seed)
     np.random.seed(seed)
     random.seed(seed)
+
+    # Initialize wandb (only on main process)
+    if args.wandb and HAS_WANDB and utils.is_main_process():
+        wandb.init(
+            project=args.wandb_project,
+            entity=args.wandb_entity,
+            name=args.wandb_run_name or args.exp_name,
+            config=vars(args),
+            resume='allow',
+        )
+    elif args.wandb and not HAS_WANDB:
+        print('Warning: wandb is not installed. Run `pip install wandb` to enable logging.')
+        args.wandb = False
 
     model, criterion, postprocessors = build_model(args)
     model.to(device)
@@ -332,6 +361,12 @@ def main(args):
         train_stats = train_func(
             model, criterion, data_loader_train, optimizer, device, epoch, args.clip_max_norm)
         lr_scheduler.step()
+
+        # Log train stats to wandb
+        if args.wandb and HAS_WANDB and utils.is_main_process():
+            wandb_log = {f'train/{k}': v for k, v in train_stats.items()}
+            wandb_log['epoch'] = epoch
+            wandb.log(wandb_log, step=epoch)
         if args.output_dir:
             checkpoint_paths = [output_dir / 'checkpoint.pth']
             # extra checkpoint before LR drop and every 5 epochs
@@ -350,6 +385,18 @@ def main(args):
             test_stats, coco_evaluator = evaluate(
                 model, criterion, postprocessors, data_loader_val, base_ds, device, args.output_dir
             )
+
+            # Log test stats to wandb
+            if args.wandb and HAS_WANDB and utils.is_main_process():
+                wandb_log = {f'val/{k}': v for k, v in test_stats.items()}
+                # Log COCO eval AP metrics if available
+                if 'coco_eval_bbox' in test_stats:
+                    ap_names = ['AP', 'AP50', 'AP75', 'AP_s', 'AP_m', 'AP_l',
+                                'AR1', 'AR10', 'AR100', 'AR_s', 'AR_m', 'AR_l']
+                    for i, name in enumerate(ap_names):
+                        if i < len(test_stats['coco_eval_bbox']):
+                            wandb_log[f'val/{name}'] = test_stats['coco_eval_bbox'][i]
+                wandb.log(wandb_log, step=epoch)
 
             log_stats = {**{f'train_{k}': v for k, v in train_stats.items()},
                          **{f'test_{k}': v for k, v in test_stats.items()},
@@ -376,6 +423,10 @@ def main(args):
     total_time = time.time() - start_time
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))
     print('Training time {}'.format(total_time_str))
+
+    # Finish wandb run
+    if args.wandb and HAS_WANDB and utils.is_main_process():
+        wandb.finish()
 
 
 if __name__ == '__main__':

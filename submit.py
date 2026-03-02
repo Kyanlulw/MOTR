@@ -511,18 +511,19 @@ if __name__ == '__main__':
     """copy reuslts for same sequences"""
     repeated_seq_nums = ['MOT17-01-DPM',
                         'MOT17-03-DPM',
-                        'MOT17-06-DPM',
-                        'MOT17-07-DPM',
-                        'MOT17-08-DPM',
-                        'MOT17-12-DPM',
-                        'MOT17-14-DPM',
-                        'MOT17-01-FRCNN',
-                        'MOT17-03-FRCNN',
-                        'MOT17-06-FRCNN',
-                        'MOT17-07-FRCNN',
-                        'MOT17-08-FRCNN',
-                        'MOT17-12-FRCNN',
-                        'MOT17-14-FRCNN']
+                        # 'MOT17-06-DPM',
+                        # 'MOT17-07-DPM',
+                        # 'MOT17-08-DPM',
+                        # 'MOT17-12-DPM',
+                        # 'MOT17-14-DPM',
+                        # 'MOT17-01-FRCNN',
+                        # 'MOT17-03-FRCNN',
+                        # 'MOT17-06-FRCNN',
+                        # 'MOT17-07-FRCNN',
+                        # 'MOT17-08-FRCNN',
+                        # 'MOT17-12-FRCNN',
+                        # 'MOT17-14-FRCNN'
+                        ]
     
     print('copy reuslts for same sequences: ')
     predict_path = os.path.join(args.output_dir, args.exp_name)

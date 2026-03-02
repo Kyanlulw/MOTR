@@ -24,7 +24,7 @@ import argparse
 import torchvision.transforms.functional as F
 from tqdm import tqdm
 from pathlib import Path
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw 
 from models import build_model
 from util.tool import load_model
 from main import get_args_parser

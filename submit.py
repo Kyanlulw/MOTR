@@ -497,11 +497,12 @@ if __name__ == '__main__':
     sub_dir = 'MOT17/images/test'
     seq_nums = ['MOT17-01-SDP',
                 'MOT17-03-SDP',
-                'MOT17-06-SDP',
-                'MOT17-07-SDP',
-                'MOT17-08-SDP',
-                'MOT17-12-SDP',
-                'MOT17-14-SDP']
+                # 'MOT17-06-SDP',
+                # 'MOT17-07-SDP',
+                # 'MOT17-08-SDP',
+                # 'MOT17-12-SDP',
+                # 'MOT17-14-SDP'
+                ]
 
     for seq_num in seq_nums:
         det = Detector(args, model=detr, seq_num=seq_num)
